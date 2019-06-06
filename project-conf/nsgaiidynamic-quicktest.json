@@ -5,5 +5,15 @@
   ],
   "algorithms": [
     "NSGAIIDynamic"
+  ],
+  "objectiveEvaluations": 12000,
+  "populationSize": 100,
+  "repairedSolutions": 0.3,
+  "histPropPreviousEventSolutions": 0.2,
+  "numberOfSwarms": 30,
+  "swarmSize": 60,
+  "dynamicStrategies": [
+    "history_info",
+    "proactive_repair"
   ]
 }

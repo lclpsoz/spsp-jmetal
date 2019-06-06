@@ -12,7 +12,7 @@ import net.rodrigoamaral.logging.SPSPLogger;
 public class DSPSPExperimentApp {
     public static void main(String[] args) {
         ExperimentCLI cli = new ExperimentCLI(args);
-        ExperimentRunner runner = new ExperimentRunner(cli.getExperimentSettings());
+        ExperimentRunner runner = new ExperimentRunner(cli.getExperimentSettings(), 1);
         runner.run();
     }
 }
