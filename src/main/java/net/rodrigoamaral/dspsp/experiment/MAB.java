@@ -80,7 +80,7 @@ public class MAB {
      */
     public void updWeights () {
         int arm = 0;
-r
+
         if (time < numArms)
             arm = time;
         else {
