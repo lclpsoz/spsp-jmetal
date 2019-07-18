@@ -6,7 +6,6 @@ import net.rodrigoamaral.dspsp.decision.DecisionMaker;
 import net.rodrigoamaral.dspsp.project.DynamicEmployee;
 import net.rodrigoamaral.dspsp.project.DynamicProject;
 import net.rodrigoamaral.dspsp.project.events.DynamicEvent;
-import net.rodrigoamaral.dspsp.project.events.EventType;
 import net.rodrigoamaral.dspsp.results.SolutionFileWriter;
 import net.rodrigoamaral.dspsp.solution.DynamicPopulationCreator;
 import net.rodrigoamaral.dspsp.solution.SchedulingHistory;
@@ -22,7 +21,6 @@ import org.uma.jmetal.util.AlgorithmRunner;
 
 import java.io.FileNotFoundException;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Runs experiments on DSPSP problem.
@@ -35,30 +33,36 @@ import java.util.Random;
  */
 public class ExperimentRunner {
 
-    private Random random;
+    private CalcHypervolume calcHypervolume;
     private final ExperimentSettings experimentSettings;
     private SchedulingHistory history;
     private int reschedulings;
     private int typeOfRescheduling;
-
-    public ExperimentRunner(final ExperimentSettings experimentSettings) {
-        random = new Random();
-        this.experimentSettings = experimentSettings;
-        this.history = new SchedulingHistory();
-    }
+    private MAB mab;
 
     /**
      * Run DYNAMIC experiments in one of different options on how to choose the population in each reschedule:
      * 0 - weights fixed as in settings json
      * 1 - random weights
+     * 2 - MAB
      * @param experimentSettings
      * @param typeOfRescheduling
      */
     public ExperimentRunner(final ExperimentSettings experimentSettings, int typeOfRescheduling) {
-        random = new Random();
+        mab = new MAB (experimentSettings.getHistPropPreviousEventSolutions(),
+                experimentSettings.getRepairedSolutions());
         this.experimentSettings = experimentSettings;
         this.history = new SchedulingHistory();
         this.typeOfRescheduling = typeOfRescheduling;
+        calcHypervolume = new CalcHypervolume();
+    }
+
+    public ExperimentRunner(final ExperimentSettings experimentSettings) {
+        mab = new MAB (experimentSettings.getHistPropPreviousEventSolutions(),
+                experimentSettings.getRepairedSolutions());
+        this.experimentSettings = experimentSettings;
+        this.history = new SchedulingHistory();
+        calcHypervolume = new CalcHypervolume();
     }
 
     private DSPSProblem loadProblemInstance(final String instanceFile) {
@@ -133,6 +137,9 @@ public class ExperimentRunner {
 
             SchedulingResult result = reschedule(project, event, currentSchedule, assembler);
 
+
+            mab.insertReward (calcHypervolume.getHypervolume (result.getSchedules()));
+
             history.put(reschedulings, result.getSchedules());
 
 
@@ -186,10 +193,16 @@ public class ExperimentRunner {
         // First rescheduling doesn't take initial population
         if ((reschedulings > 1) && (assembler.getAlgorithmID().toUpperCase().endsWith("DYNAMIC"))) {
 
-            updWeights();
+            if (typeOfRescheduling == 1)
+                mab.updWeightsRandom();
+            else if (typeOfRescheduling == 2)
+                mab.updWeights();
 
-            SPSPLogger.info ("Repared Solutions: " + experimentSettings.getRepairedSolutions()*100 + " %");
+            experimentSettings.setRepairedSolutions(mab.getRepaired());
+            experimentSettings.setHistPropPreviousEventSolutions(mab.getHist());
+            SPSPLogger.info ("Repaired Solutions: " + experimentSettings.getRepairedSolutions()*100 + " %");
             SPSPLogger.info ("History Solutions: " + experimentSettings.getHistPropPreviousEventSolutions()*100 + " %");
+
             List<DoubleSolution> initialPopulation = new DynamicPopulationCreator(
                     problem,
                     history,
@@ -208,21 +221,6 @@ public class ExperimentRunner {
         return new SchedulingResult(algorithm.getResult(),
                 algorithmRunner.getComputingTime(),
                 problem.getProject().isFinished());
-    }
-
-    /**
-     * Update weights of each type of population for dynamic rescheduling.
-     * The new values are in 0.05 intervals. It's guaranteed that each value
-     * will be at least 0.05 and at most 0.90, that way each population will
-     * have at least 0.05 representation.
-     */
-    private void updWeights () {
-        if (typeOfRescheduling == 1) {
-            int hist = 1 + random.nextInt(18);
-            int repaired = (1 + random.nextInt(19 - hist));
-            experimentSettings.setHistPropPreviousEventSolutions(hist/20.0);
-            experimentSettings.setRepairedSolutions(repaired/20.0);
-        }
     }
 
     /**
@@ -246,5 +244,4 @@ public class ExperimentRunner {
             }
         }
     }
-
 }
