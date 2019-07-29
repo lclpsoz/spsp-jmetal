@@ -107,9 +107,10 @@ public class MAB {
     public void updWeightsUCB1() {
         int arm = 0;
 
-        if (time < numArms)
+        if (time < numArms) {
             arm = time;
-        else {
+            SPSPLogger.info ("MAB-UCB1: Arm " + (arm+1) + ": Initial evaluations.");
+        } else {
             double bst = -1;
             for (int i = 0; i < 6; i++) {
                 double a = Math.sqrt((2 * Math.log10(time)) / pullMachine[i]);
@@ -118,7 +119,7 @@ public class MAB {
                     bst = eval;
                     arm = i;
                 }
-                SPSPLogger.info ("Arm " + (i+1) + ": " + pullMachine[i] + "\t" + eval);
+                SPSPLogger.info ("MAB-UCB1: Arm " + (i+1) + ": " + pullMachine[i] + "\t" + eval);
             }
         }
 
@@ -135,11 +136,13 @@ public class MAB {
     public void updWeightsEpsilonGreedy () {
         int arm = 0;
 
-        if (time < numArms)
+        if (time < numArms) {
             arm = time;
-        else if (random.nextDouble() < epsilon)
+            SPSPLogger.info("MAB-EPS: Arm " + (arm + 1) + ": Initial evaluations.");
+        } else if (random.nextDouble() < epsilon) {
             arm = random.nextInt(6);
-        else {
+            SPSPLogger.info ("MAB-EPS: Arm " + (arm+1) + ": Random choice.");
+        } else {
             double bst = -1;
             for (int i = 0; i < 6; i++) {
                 double eval = rewards[i] / pullMachine[i];
@@ -147,7 +150,7 @@ public class MAB {
                     bst = eval;
                     arm = i;
                 }
-                SPSPLogger.info("Arm " + (i+1) + ": " + pullMachine[i] + "\t" + eval);
+                SPSPLogger.info("MAB-EPS: Arm " + (i+1) + ": " + pullMachine[i] + "\t" + eval);
             }
         }
 

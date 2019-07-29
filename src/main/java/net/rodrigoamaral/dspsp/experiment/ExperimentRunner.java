@@ -113,6 +113,8 @@ public class ExperimentRunner {
         for (DynamicEvent event: reschedulingPoints) {
 
             reschedulings++;
+            if (reschedulings > 90)
+                break;
 
             if (project.isFinished()) {
                 break;
@@ -177,11 +179,9 @@ public class ExperimentRunner {
         Algorithm<List<DoubleSolution>> algorithm;
 
         // First rescheduling doesn't take initial population
-        if ((reschedulings > 1) && (assembler.getAlgorithmID().startsWith("NSGAIIDynamic"))) {
+        if ((reschedulings > 1) && (assembler.getAlgorithmID().toUpperCase().contains("DYNAMIC"))) {
 
-            SPSPLogger.info ("\tALGORITHM NOW: " + assembler.getAlgorithmID());
-
-            if (assembler.getAlgorithmID().equals("NSGAIIDynamic_RANDOM"))
+            if (assembler.getAlgorithmID().startsWith("NSGAIIDynamic_RANDOM"))
                 mab.updWeightsRandom();
             else if (assembler.getAlgorithmID().startsWith("NSGAIIDynamic_UCB1"))
                 mab.updWeightsUCB1();
