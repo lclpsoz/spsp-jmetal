@@ -37,29 +37,14 @@ public class ExperimentRunner {
     private final ExperimentSettings experimentSettings;
     private SchedulingHistory history;
     private int reschedulings;
-    private int typeOfRescheduling;
     private MAB mab;
-
-    /**
-     * Run DYNAMIC experiments in one of different options on how to choose the population in each reschedule:
-     * 0 - weights fixed as in settings json
-     * 1 - random weights
-     * 2 - MAB
-     * @param experimentSettings
-     * @param typeOfRescheduling
-     */
-    public ExperimentRunner(final ExperimentSettings experimentSettings, int typeOfRescheduling) {
-        mab = new MAB (experimentSettings.getHistPropPreviousEventSolutions(),
-                experimentSettings.getRepairedSolutions());
-        this.experimentSettings = experimentSettings;
-        this.history = new SchedulingHistory();
-        this.typeOfRescheduling = typeOfRescheduling;
-        calcHypervolume = new CalcHypervolume();
-    }
+    private double originalHist, originalRepaired;
 
     public ExperimentRunner(final ExperimentSettings experimentSettings) {
-        mab = new MAB (experimentSettings.getHistPropPreviousEventSolutions(),
-                experimentSettings.getRepairedSolutions());
+        originalHist = experimentSettings.getHistPropPreviousEventSolutions();
+        originalRepaired = experimentSettings.getRepairedSolutions();
+        mab = new MAB (originalHist, originalRepaired);
+
         this.experimentSettings = experimentSettings;
         this.history = new SchedulingHistory();
         calcHypervolume = new CalcHypervolume();
@@ -138,7 +123,8 @@ public class ExperimentRunner {
             SchedulingResult result = reschedule(project, event, currentSchedule, assembler);
 
 
-            mab.insertReward (calcHypervolume.getHypervolume (result.getSchedules()));
+            if (!problem.getProject().isFinished())
+                mab.insertReward (calcHypervolume.getHypervolume (result.getSchedules()));
 
             history.put(reschedulings, result.getSchedules());
 
@@ -191,12 +177,16 @@ public class ExperimentRunner {
         Algorithm<List<DoubleSolution>> algorithm;
 
         // First rescheduling doesn't take initial population
-        if ((reschedulings > 1) && (assembler.getAlgorithmID().toUpperCase().endsWith("DYNAMIC"))) {
+        if ((reschedulings > 1) && (assembler.getAlgorithmID().startsWith("NSGAIIDynamic"))) {
 
-            if (typeOfRescheduling == 1)
+            SPSPLogger.info ("\tALGORITHM NOW: " + assembler.getAlgorithmID());
+
+            if (assembler.getAlgorithmID().equals("NSGAIIDynamic_RANDOM"))
                 mab.updWeightsRandom();
-            else if (typeOfRescheduling == 2)
-                mab.updWeights();
+            else if (assembler.getAlgorithmID().startsWith("NSGAIIDynamic_UCB1"))
+                mab.updWeightsUCB1();
+            else if (assembler.getAlgorithmID().startsWith("NSGAIIDynamic_EPSILON_GREEDY"))
+                mab.updWeightsEpsilonGreedy();
 
             experimentSettings.setRepairedSolutions(mab.getRepaired());
             experimentSettings.setHistPropPreviousEventSolutions(mab.getHist());
@@ -236,6 +226,8 @@ public class ExperimentRunner {
             for (String algorithmID : experimentSettings.getAlgorithms()) {
                 final Integer numberOfRuns = experimentSettings.getNumberOfRuns();
                 for (int run = 1; run <= numberOfRuns; run++) {
+                    mab = new MAB (originalHist, originalRepaired);
+                    calcHypervolume = new CalcHypervolume();
                     SPSPLogger.printRun(run, numberOfRuns);
                     final DSPSProblem problem = loadProblemInstance(instanceFile);
                     AlgorithmAssembler assembler = new AlgorithmAssembler(algorithmID, experimentSettings);
