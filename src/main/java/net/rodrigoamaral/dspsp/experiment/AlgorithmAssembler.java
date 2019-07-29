@@ -99,7 +99,7 @@ public class AlgorithmAssembler {
                     .setMaxEvaluations(getMaxIterations())
                     .setPopulationSize(populationSize)
                     .build();
-        } else if ("NSGAIIDYNAMIC".equals(algorithmID.toUpperCase())) {
+        } else if (algorithmID.toUpperCase().startsWith("NSGAIIDYNAMIC")) {
                 return new NSGAIIDynamicBuilder(problem, crossover, mutation)
                         .setInitialPopulation(initialPopulation)
                         .setSelectionOperator(selection)

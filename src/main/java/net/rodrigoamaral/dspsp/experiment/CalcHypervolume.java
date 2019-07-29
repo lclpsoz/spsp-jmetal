@@ -1,6 +1,5 @@
 package net.rodrigoamaral.dspsp.experiment;
 
-import org.uma.jmetal.qualityindicator.impl.Hypervolume;
 import org.uma.jmetal.qualityindicator.impl.hypervolume.PISAHypervolume;
 import org.uma.jmetal.solution.DoubleSolution;
 import org.uma.jmetal.util.front.imp.ArrayFront;
@@ -27,12 +26,10 @@ public class CalcHypervolume {
                 maxRes[i] = Math.max (maxRes[i], r.getObjective(i));
             }
 
-
         int pos = 0;
         for (DoubleSolution r : results)
             for (int i = 0; i < 4; i++)
                 front[pos][i] = (r.getObjective(i) - minRes[i]) / (maxRes[i] - minRes[i]);
-
 
         ArrayFront referencePoints = new ArrayFront (results.size(), 4);
         double[] refPoint = {1.1, 1.1, 1.1, 1.1};
