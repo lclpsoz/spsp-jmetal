@@ -37,8 +37,14 @@ public class ExperimentRunner {
     private final ExperimentSettings experimentSettings;
     private SchedulingHistory history;
     private int reschedulings;
+    private Integer reschedulingsLimit;
     private MAB mab;
     private double originalHist, originalRepaired;
+
+    public ExperimentRunner(final ExperimentSettings experimentSettings, Integer reschedulingsLimit) {
+        this (experimentSettings);
+        this.reschedulingsLimit = reschedulingsLimit;
+    }
 
     public ExperimentRunner(final ExperimentSettings experimentSettings) {
         originalHist = experimentSettings.getHistPropPreviousEventSolutions();
@@ -48,6 +54,7 @@ public class ExperimentRunner {
         this.experimentSettings = experimentSettings;
         this.history = new SchedulingHistory();
         calcHypervolume = new CalcHypervolume();
+        reschedulingsLimit = null;
     }
 
     private DSPSProblem loadProblemInstance(final String instanceFile) {
@@ -113,10 +120,8 @@ public class ExperimentRunner {
         for (DynamicEvent event: reschedulingPoints) {
 
             reschedulings++;
-            if (reschedulings > 90)
-                break;
 
-            if (project.isFinished()) {
+            if (project.isFinished() || (reschedulingsLimit != null && reschedulings > reschedulingsLimit)) {
                 break;
             }
 
